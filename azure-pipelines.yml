@@ -58,10 +58,10 @@ steps:
     cat terraform.tfvars
   displayName: 'Replace Values'
 
-- task: TerraformInstaller@0
-  inputs:
-    terraformVersion: '1.5.0' # Specify version explicitly if needed
-  displayName: 'Install Terraform'
+# - task: TerraformInstaller@0
+#   inputs:
+#     terraformVersion: '1.5.0' # Specify version explicitly if needed
+#   displayName: 'Install Terraform'
 
 - task: TerraformTaskV3@3
   inputs:
