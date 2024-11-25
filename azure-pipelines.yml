@@ -6,14 +6,107 @@
 trigger:
 - main
 
-pool:
-  vmImage: ubuntu-latest
+# pool:
+#   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+# steps:
+# - script: echo Hello, world!
+#   displayName: 'Run a one-line script'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+# - script: |
+#     echo Add other tasks to build, test, and deploy your project.
+#     echo See https://aka.ms/yaml
+#   displayName: 'Run a multi-line script'
+
+parameters:
+  - name: name
+    displayName: Name_of_Resource
+    type: string
+    default: application
+  
+  - name: region
+    displayName: region
+    type: string
+    default: eastus
+    values:
+    - eastus
+    - eastus2
+    - northeurope
+    - centralindia
+
+  - name: vmSize
+    displayName: VM_Size
+    type: string
+    default: D4s_v3
+    values:
+    - D2as_v4
+    - DS2_v2
+    - D4s_v3
+    - D2as_v4
+    - DS3_v2
+    - D8s_v3
+
+         
+  - name: vmStorageAccountType
+    displayName: VM_Storage_Account_Type
+    type: string
+    default: Standard_LRS
+    values:
+    - Standard_LRS
+    - StandardSSD_LRS
+    - Premium_LRS
+    - UltraSSD_LRS
+
+  - name: imageSKU
+    displayName: Image_SKU
+    type: string
+    default: 20.04-LTS
+    values:
+    - 16.04-LTS
+    - 18.04-LTS
+    - 20.04-LTS
+    - 22.04-LTS
+
+- bash: |
+    sed -i "s/{vm}/${{ parameters.name }}/g" terraform.tfvars
+    sed -i "s/{West Europe}/${{ parameters.region }}/g" terraform.tfvars
+    sed -i "s/{StandardF2}/${{ parameters.vmSize }}/g" terraform.tfvars
+    sed -i "s/{StandardLRS}/${{ parameters.vmStorageAccountType }}/g" terraform.tfvars
+    sed -i "s/{16.04-LTS}/${{ parameters.imageSKU }}/g" terraform.tfvars
+    cat terraform.tfvars
+  displayName: 'Replace Values'
+
+- task: TerraformInstaller@0
+  inputs:
+   terraformVersion: 'latest'
+  displayName: 'Install Terraform latest'
+
+- task: TerraformTaskV3@3
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    backendServiceArm: 'Opstree-PoCs (4c93adXXXXXXXXXXXXXXXXXXXXXX8f3c)'
+    backendAzureRmResourceGroupName: 'jenkins_server'
+    backendAzureRmStorageAccountName: 'asdfghjkasdf'
+    backendAzureRmContainerName: 'backend'
+    backendAzureRmKey: 'backend.tfstate'
+
+ - task: TerraformTaskV3@3
+   displayName: 'Terraform : Validate'
+   inputs:
+    command: validate
+
+ - task: TerraformTaskV3@3
+   displayName: 'Terraform : Plan'
+   inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    commandOptions: '-lock=false'
+    environmentServiceNameAzureRM: 'Opstree-PoCs (4c9xxxxxxxxxxx3c)'
+
+ - task: TerraformTaskV3@3
+   inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    commandOptions: '-auto-approve'
+    environmentServiceNameAzureRM: 'Opstree-PoCs (4c93xxxxxxxxf3c)'
